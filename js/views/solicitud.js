@@ -4,7 +4,7 @@ import { db } from "../firebase-config.js";
 export async function initSolicitudView({ role, userName }) {
   document.getElementById("solicitante").value = userName;
   if (role === "usuario" || role === "supervisor") {
-    document.getElementById("tipoGrupo").style.display = "none";
+    document.getElementById("tipoGrupo").classList.add("is-hidden");
     document.getElementById("tipo").value = "Correctivo";
   }
 
@@ -48,7 +48,8 @@ async function cargarOpciones() {
 
 function mostrarFrecuencia() {
   const tipo = document.getElementById("tipo").value;
-  document.getElementById("grupoFrecuencia").style.display = tipo === "Preventivo" ? "block" : "none";
+  const grupoFrecuencia = document.getElementById("grupoFrecuencia");
+  grupoFrecuencia.classList.toggle("is-hidden", tipo !== "Preventivo");
 }
 
 async function generarNumero(tipo) {

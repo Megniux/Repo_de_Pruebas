@@ -56,8 +56,16 @@ export async function initConsultaView({ role }) {
   document.getElementById("editEstado").addEventListener("change", actualizarCamposEstadoCierre);
 
   document.getElementById("mainContent").addEventListener("click", (e) => {
-    if (e.target.matches(".close-modal")) cerrarModal(e.target.dataset.modal);
-  });
+  // 1. Cerrar por botón de "X" o "Cancelar"
+  if (e.target.matches(".close-modal")) {
+    toggleModal(e.target.dataset.modal, false);
+  }
+
+  // 2. Opcional: Cerrar si se hace clic en el fondo del modal (el overlay)
+  if (e.target.matches(".modal")) {
+    toggleModal(e.target.id, false);
+  }
+});
 
   if (!listenerCierreMenuRegistrado) {
     document.addEventListener("click", (e) => {
@@ -336,7 +344,7 @@ async function verDetalles(id) {
         <tbody>${historialRows || '<tr><td colspan="4">Sin historial</td></tr>'}</tbody>
       </table>
     </div>`;
-  document.getElementById("modalDetalles").style.display = "block";
+  toggleModal("modalDetalles", true);
 }
 
 async function abrirModal(id) {
@@ -376,7 +384,7 @@ async function abrirModal(id) {
   actualizarCamposEstadoCierre();
 
   document.getElementById("guardarEdicionBtn").onclick = guardarEdicion;
-  document.getElementById("modalEditar").style.display = "block";
+  toggleModal("modalEditar", true);
 }
 
 async function guardarEdicion() {
@@ -462,7 +470,7 @@ async function guardarEdicion() {
     }
 
     await updateDoc(docRef, updateData);
-    cerrarModal("modalEditar");
+    toggleModal("modalEditar", false);
     await cargarTodasOrdenes();
     await cargar();
   } catch (error) {
@@ -541,9 +549,8 @@ async function generarPreventivaRecurrente(original) {
   await addDoc(collection(db, "ordenes"), nueva);
 }
 
-function cerrarModal(id) {
-  const modal = document.getElementById(id);
-  if (modal) modal.style.display = "none";
+function toggleModal(id, visible) {
+  document.getElementById(id)?.classList.toggle("is-hidden", !visible);
 }
 
 function formatearFechaCorta(fecha) {
@@ -602,8 +609,10 @@ function calcularProximaFechaProgramada(frecuencia) {
 
 function actualizarCamposEstadoCierre() {
   const esCerrado = document.getElementById("editEstado").value === "Cerrado";
-  document.getElementById("editTiempoRealGroup").style.display = esCerrado ? "block" : "none";
-  document.getElementById("editInformeCierreGroup").style.display = esCerrado ? "block" : "none";
+  const tiempoRealGroup = document.getElementById("editTiempoRealGroup");
+  const informeCierreGroup = document.getElementById("editInformeCierreGroup");
+  tiempoRealGroup.classList.toggle("is-hidden", !esCerrado);
+  informeCierreGroup.classList.toggle("is-hidden", !esCerrado);
 }
 
 async function limpiarFiltros() {

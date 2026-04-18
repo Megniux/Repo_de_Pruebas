@@ -610,7 +610,6 @@ th {
 }
 
 .modal {
-  display: none;
   position: fixed;
   z-index: 1000;
   inset: 0;
