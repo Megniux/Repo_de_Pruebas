@@ -1,0 +1,74 @@
+import { createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { collection, getDocs, doc, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { auth, db } from "../firebase-config.js";
+
+export async function initUsuariosView() {
+  await cargarUsuarios();
+  document.getElementById("crearUsuarioBtn").addEventListener("click", crearUsuario);
+}
+
+async function cargarUsuarios() {
+  const snapshot = await getDocs(collection(db, "users"));
+  const tbody = document.querySelector("#tablaUsuarios tbody");
+  tbody.innerHTML = "";
+  const usuarios = [];
+  snapshot.forEach((docSnap) => {
+    usuarios.push({ id: docSnap.id, ...docSnap.data() });
+  });
+  usuarios.sort((a, b) => {
+    const nombreA = a.nombreCompleto || a.email || "";
+    const nombreB = b.nombreCompleto || b.email || "";
+    return nombreA.localeCompare(nombreB, "es", { sensitivity: "base" });
+  });
+  usuarios.forEach((data) => {
+    const row = tbody.insertRow();
+    row.insertCell(0).textContent = data.email;
+    row.insertCell(1).textContent = data.nombreCompleto;
+    row.insertCell(2).textContent = data.rol;
+    const actions = row.insertCell(3);
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "btn-delete-icon";
+    btn.setAttribute("aria-label", `Eliminar ${data.email || "usuario"}`);
+    btn.innerHTML = '<i class="fa-solid fa-trash-can"></i>';
+    btn.addEventListener("click", () => eliminarUsuario(data.id));
+    actions.appendChild(btn);
+  });
+}
+
+async function crearUsuario() {
+  const btn = document.getElementById("crearUsuarioBtn");
+  if (!btn || btn.disabled) return;
+
+  const email = document.getElementById("email").value.trim();
+  const nombre = document.getElementById("nombre").value.trim();
+  const password = document.getElementById("password").value;
+  const rol = document.getElementById("rol").value;
+  if (!email || !nombre || !password) return alert("Complete todos los campos");
+
+  const originalHTML = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Procesando...';
+
+  try {
+    const userCred = await createUserWithEmailAndPassword(auth, email, password);
+    await setDoc(doc(db, "users", userCred.user.uid), { email, nombreCompleto: nombre, rol });
+    alert("Usuario creado exitosamente");
+    document.getElementById("email").value = "";
+    document.getElementById("nombre").value = "";
+    document.getElementById("password").value = "";
+    await cargarUsuarios();
+  } catch (error) {
+    console.error(error);
+    alert(`Error al crear usuario: ${error.message}`);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = originalHTML;
+  }
+}
+
+async function eliminarUsuario(uid) {
+  if (!confirm("¿Eliminar usuario? (No se elimina autenticación, solo Firestore)")) return;
+  await deleteDoc(doc(db, "users", uid));
+  await cargarUsuarios();
+}

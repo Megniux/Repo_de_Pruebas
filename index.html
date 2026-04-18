@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>Sistema de Mantenimiento</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="app-layout">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-content">
+      <div class="sidebar-header">
+        <img src="logo.jpg" alt="Logo" class="sidebar-logo">
+        <h2>Mantenimiento</h2>
+      </div>
+      <nav class="sidebar-nav" id="sidebar-nav"></nav>
+      <div class="sidebar-footer">
+        <div class="user-info">
+          <div class="user-avatar" id="userAvatar">I</div>
+          <div>
+            <div class="user-name" id="userName">Invitado</div>
+            <div class="user-role" id="userRole">No autenticado</div>
+          </div>
+        </div>
+        <button class="logout-btn-sidebar" id="logoutBtn"><i class="fas fa-sign-out-alt"></i><span> Cerrar sesión</span></button>
+        <div class="sidebar-contacts" aria-label="Teléfonos de contacto">
+          <h3>Telefonos de contacto</h3>
+          <a class="sidebar-contact-link" href="tel:+5491159300178">(011) 5930-0178</a>
+          <a class="sidebar-contact-link" href="tel:+5491178933582">(011) 7893-3582</a>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <div class="top-bar">
+      <button id="sidebarToggle" class="mobile-sidebar-toggle" type="button" aria-label="Mostrar menú" aria-expanded="false">
+        <i class="fas fa-bars"></i>
+      </button>
+      <div class="page-title"><h1 id="pageTitle">Iniciar Sesión</h1></div>
+    </div>
+    <section id="mainContent" class="view-host"></section>
+  </main>
+</div>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
