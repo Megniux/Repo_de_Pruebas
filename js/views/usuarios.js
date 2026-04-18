@@ -1,6 +1,7 @@
-import { createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { createUserWithEmailAndPassword, getAuth } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { collection, getDocs, doc, setDoc, deleteDoc, query, where } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-import { auth, db } from "../firebase-config.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { auth, db, firebaseConfig } from "../firebase-config.js";
 
 let _clienteId = "";
 let _currentRole = "";
@@ -87,14 +88,22 @@ async function crearUsuario() {
   btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Procesando...';
 
   try {
-    const userCred = await createUserWithEmailAndPassword(auth, email, password);
+    // Segunda instancia de Auth para no pisar la sesión activa
+    const secondaryApp = initializeApp(firebaseConfig, "secondary");
+    const secondaryAuth = getAuth(secondaryApp);
+
+    const userCred = await createUserWithEmailAndPassword(secondaryAuth, email, password);
     await setDoc(doc(db, "users", userCred.user.uid), {
       email,
       nombreCompleto: nombre,
       rol,
-      // Los superadmin no pertenecen a ningún cliente específico
       clienteId: rol === "superadmin" ? "" : _clienteId
     });
+
+    // Cerrar la sesión de la instancia secundaria y eliminarla
+    await secondaryAuth.signOut();
+    await secondaryApp.delete();
+    
     alert("Usuario creado exitosamente");
     document.getElementById("email").value = "";
     document.getElementById("nombre").value = "";

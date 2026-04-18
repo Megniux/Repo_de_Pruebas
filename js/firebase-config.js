@@ -2,7 +2,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/fireba
 import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-const firebaseConfig = {
+export const firebaseConfig = {
   apiKey: "AIzaSyC5eZDHD0Ui8n8LTlGeARnIjemKKfgBSH0",
   authDomain: "pruebas-ae2ce.firebaseapp.com",
   projectId: "pruebas-ae2ce",
