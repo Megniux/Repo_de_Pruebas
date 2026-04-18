@@ -1,6 +1,6 @@
 import { createUserWithEmailAndPassword, getAuth } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { collection, getDocs, doc, setDoc, deleteDoc, query, where } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { auth, db, firebaseConfig } from "../firebase-config.js";
 
 let _clienteId = "";
@@ -102,7 +102,7 @@ async function crearUsuario() {
 
     // Cerrar la sesión de la instancia secundaria y eliminarla
     await secondaryAuth.signOut();
-    await secondaryApp.delete();
+    await deleteApp(secondaryApp);
     
     alert("Usuario creado exitosamente");
     document.getElementById("email").value = "";
