@@ -1,7 +1,10 @@
-import { collection, addDoc, doc, getDoc, getDocs, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { collection, addDoc, doc, getDoc, getDocs, updateDoc, query, where } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { db } from "../firebase-config.js";
 
-export async function initSolicitudView({ role, userName }) {
+let _clienteId = "";
+
+export async function initSolicitudView({ role, userName, clienteId }) {
+  _clienteId = clienteId || "";
   document.getElementById("solicitante").value = userName;
   if (role === "usuario" || role === "supervisor") {
     document.getElementById("tipoGrupo").classList.add("is-hidden");
@@ -15,7 +18,7 @@ export async function initSolicitudView({ role, userName }) {
 }
 
 async function cargarOpciones() {
-  const ubicacionesSnap = await getDocs(collection(db, "ubicaciones"));
+  const ubicacionesSnap = await getDocs(query(collection(db, "ubicaciones"), where("clienteId", "==", _clienteId)));
   const ubicacionSelect = document.getElementById("ubicacion");
   ubicacionSelect.innerHTML = '<option value="">Seleccionar ubicación</option>';
   const ubicaciones = [];
@@ -30,7 +33,7 @@ async function cargarOpciones() {
     ubicacionSelect.appendChild(opt);
   });
 
-  const equiposSnap = await getDocs(collection(db, "equipos"));
+  const equiposSnap = await getDocs(query(collection(db, "equipos"), where("clienteId", "==", _clienteId)));
   const equipoSelect = document.getElementById("equipo");
   equipoSelect.innerHTML = '<option value="">Seleccionar equipo</option>';
   const equipos = [];
@@ -53,16 +56,19 @@ function mostrarFrecuencia() {
 }
 
 async function generarNumero(tipo) {
-  const ref = doc(db, "config", "contador");
+  // El contador está en clientes/{clienteId}
+  const ref = doc(db, "clientes", _clienteId);
   const snap = await getDoc(ref);
-  const data = snap.data();
+  const data = snap.data() || {};
   let numero;
   if (tipo === "Correctivo") {
-    numero = `OMC-${String(data.contadorOMC).padStart(4, "0")}`;
-    await updateDoc(ref, { contadorOMC: data.contadorOMC + 1 });
+    const contadorOMC = data.contadorOMC || 1;
+    numero = `OMC-${String(contadorOMC).padStart(4, "0")}`;
+    await updateDoc(ref, { contadorOMC: contadorOMC + 1 });
   } else {
-    numero = `OMP-${String(data.contadorOMP).padStart(4, "0")}`;
-    await updateDoc(ref, { contadorOMP: data.contadorOMP + 1 });
+    const contadorOMP = data.contadorOMP || 1;
+    numero = `OMP-${String(contadorOMP).padStart(4, "0")}`;
+    await updateDoc(ref, { contadorOMP: contadorOMP + 1 });
   }
   return numero;
 }
@@ -89,6 +95,7 @@ async function guardar() {
   try {
     const numeroOrden = await generarNumero(tipo);
     await addDoc(collection(db, "ordenes"), {
+      clienteId: _clienteId,
       numeroOrden, tipo, estado: "Nuevo", fechaCreacion: new Date(),
       fechaProgramada: null, fechaCierre: null, solicitante, solicitanteUid: uid,
       ubicacion, equipo, descripcion, prioridad,

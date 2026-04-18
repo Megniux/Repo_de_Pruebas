@@ -1,7 +1,8 @@
-import { collection, getDocs, doc, updateDoc, getDoc, addDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { collection, getDocs, doc, updateDoc, getDoc, addDoc, deleteDoc, query, where } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { db } from "../firebase-config.js";
 
 let userRole = null;
+let _clienteId = "";
 let todasOrdenes = [];
 let currentOrderId = null;
 let listaTecnicos = [];
@@ -40,8 +41,9 @@ const CAMPOS_DETALLE_ORDEN = [
   { label: "Tiempo real (hs)", getValue: (orden) => orden.tiempoReal ?? "-" }
 ];
 
-export async function initConsultaView({ role }) {
+export async function initConsultaView({ role, clienteId }) {
   userRole = role;
+  _clienteId = clienteId || "";
   await cargarListasFiltros();
   await cargarTecnicos();
   await cargarTodasOrdenes();
@@ -56,16 +58,13 @@ export async function initConsultaView({ role }) {
   document.getElementById("editEstado").addEventListener("change", actualizarCamposEstadoCierre);
 
   document.getElementById("mainContent").addEventListener("click", (e) => {
-  // 1. Cerrar por botón de "X" o "Cancelar"
-  if (e.target.matches(".close-modal")) {
-    toggleModal(e.target.dataset.modal, false);
-  }
-
-  // 2. Opcional: Cerrar si se hace clic en el fondo del modal (el overlay)
-  if (e.target.matches(".modal")) {
-    toggleModal(e.target.id, false);
-  }
-});
+    if (e.target.matches(".close-modal")) {
+      toggleModal(e.target.dataset.modal, false);
+    }
+    if (e.target.matches(".modal")) {
+      toggleModal(e.target.id, false);
+    }
+  });
 
   if (!listenerCierreMenuRegistrado) {
     document.addEventListener("click", (e) => {
@@ -98,11 +97,7 @@ function inicializarToolbarMovil() {
 
   toggleBtn.addEventListener("click", toggleToolbar);
 
-  const cierrePorAccionIds = [
-    "limpiarFiltrosBtn",
-    "aplicarOrdenBtn"
-  ];
-
+  const cierrePorAccionIds = ["limpiarFiltrosBtn", "aplicarOrdenBtn"];
   cierrePorAccionIds.forEach((id) => {
     const el = document.getElementById(id);
     if (!el) return;
@@ -118,7 +113,7 @@ function inicializarToolbarMovil() {
 }
 
 async function cargarTecnicos() {
-  const usersSnap = await getDocs(collection(db, "users"));
+  const usersSnap = await getDocs(query(collection(db, "users"), where("clienteId", "==", _clienteId)));
   listaTecnicos = [];
   usersSnap.forEach((docSnap) => {
     const data = docSnap.data();
@@ -130,7 +125,7 @@ async function cargarTecnicos() {
 }
 
 async function cargarListasFiltros() {
-  const usersSnap = await getDocs(collection(db, "users"));
+  const usersSnap = await getDocs(query(collection(db, "users"), where("clienteId", "==", _clienteId)));
   const selectUsuario = document.getElementById("filtroUsuario");
   selectUsuario.innerHTML = '<option value="">Todos</option>';
   const usuarios = [];
@@ -147,7 +142,7 @@ async function cargarListasFiltros() {
     selectUsuario.appendChild(opt);
   });
 
-  const ubicacionesSnap = await getDocs(collection(db, "ubicaciones"));
+  const ubicacionesSnap = await getDocs(query(collection(db, "ubicaciones"), where("clienteId", "==", _clienteId)));
   const selectUbicacion = document.getElementById("filtroUbicacion");
   selectUbicacion.innerHTML = '<option value="">Todas</option>';
   const ubicaciones = [];
@@ -162,7 +157,7 @@ async function cargarListasFiltros() {
     selectUbicacion.appendChild(opt);
   });
 
-  const equiposSnap = await getDocs(collection(db, "equipos"));
+  const equiposSnap = await getDocs(query(collection(db, "equipos"), where("clienteId", "==", _clienteId)));
   const selectEquipo = document.getElementById("filtroEquipo");
   selectEquipo.innerHTML = '<option value="">Todos</option>';
   const equipos = [];
@@ -179,7 +174,7 @@ async function cargarListasFiltros() {
 }
 
 async function cargarTodasOrdenes() {
-  const querySnapshot = await getDocs(collection(db, "ordenes"));
+  const querySnapshot = await getDocs(query(collection(db, "ordenes"), where("clienteId", "==", _clienteId)));
   todasOrdenes = [];
   querySnapshot.forEach((docSnap) => todasOrdenes.push({ id: docSnap.id, ...docSnap.data() }));
 }
@@ -189,7 +184,7 @@ function configurarOrdenPredeterminado() {
   const direccionOrden = document.getElementById("ordenDireccion");
   const filtroEstado = document.getElementById("filtroEstado");
   const filtroTipo = document.getElementById("filtroTipo");
-  if (userRole === "tecnico" || userRole === "admin" || userRole === "usuario" || userRole === "supervisor") {
+  if (userRole === "tecnico" || userRole === "admin" || userRole === "usuario" || userRole === "supervisor" || userRole === "superadmin") {
     campoOrden.value = "fechaProgramada";
     direccionOrden.value = "asc";
     filtroEstado.value = "noCerrado";
@@ -228,15 +223,11 @@ async function cargar() {
   });
 
   filtradas.sort((a, b) => {
-    // 1. Orden principal según el campo elegido
     const valA = obtenerValorOrden(a, ordenCampo);
     const valB = obtenerValorOrden(b, ordenCampo);
-
     if (valA !== valB) {
       return ordenDireccion === "asc" ? valA - valB : valB - valA;
     }
-
-    // 2. Si son iguales, orden secundario por nombre del equipo (ascendente siempre)
     const equipoA = (a.equipo || "").toLowerCase();
     const equipoB = (b.equipo || "").toLowerCase();
     if (equipoA < equipoB) return -1;
@@ -271,9 +262,9 @@ async function cargar() {
       addOption("Ver detalles", () => verDetalles(id));
       const orden = todasOrdenes.find((o) => o.id === id);
       if (userRole !== "usuario" && userRole !== "supervisor") {
-        if (!(orden.estado === "Cerrado" && userRole !== "admin")) addOption("Editar", () => abrirModal(id));
+        if (!(orden.estado === "Cerrado" && userRole !== "admin" && userRole !== "superadmin")) addOption("Editar", () => abrirModal(id));
       }
-      if (userRole === "admin") addOption("Eliminar", () => eliminarOrden(id));
+      if (userRole === "admin" || userRole === "superadmin") addOption("Eliminar", () => eliminarOrden(id));
       cerrarMenusDesplegables();
       menu.classList.add("show");
     });
@@ -459,11 +450,7 @@ async function guardarEdicion() {
       if (nuevoEstado === "Cerrado") {
         updateData.fechaCierre = new Date();
         if (data.tipo === "Preventivo" && data.frecuencia) {
-          const ordenCerrada = {
-            ...data,
-            ...updateData,
-            estado: nuevoEstado
-          };
+          const ordenCerrada = { ...data, ...updateData, estado: nuevoEstado };
           await generarPreventivaRecurrente(ordenCerrada);
         }
       }
@@ -481,7 +468,6 @@ async function guardarEdicion() {
     btn.innerHTML = originalHTML;
   }
 }
-
 
 function obtenerCamposModificadosAnteriores(actual, actualizado, camposOcultosHistorial = []) {
   const mapeo = {
@@ -523,14 +509,17 @@ function normalizarValorVisual(campo, valor) {
 }
 
 async function generarPreventivaRecurrente(original) {
-  const refCont = doc(db, "config", "contador");
+  // El contador está en clientes/{clienteId}
+  const refCont = doc(db, "clientes", _clienteId);
   const snapCont = await getDoc(refCont);
-  const cont = snapCont.data();
-  const numeroOrden = `OMP-${String(cont.contadorOMP).padStart(4, "0")}`;
-  await updateDoc(refCont, { contadorOMP: cont.contadorOMP + 1 });
+  const cont = snapCont.data() || {};
+  const contadorOMP = cont.contadorOMP || 1;
+  const numeroOrden = `OMP-${String(contadorOMP).padStart(4, "0")}`;
+  await updateDoc(refCont, { contadorOMP: contadorOMP + 1 });
 
   const nueva = {
     ...original,
+    clienteId: _clienteId,
     numeroOrden,
     estado: "Pendiente",
     fechaCreacion: new Date(),
