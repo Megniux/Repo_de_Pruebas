@@ -109,6 +109,7 @@ async function guardar() {
     alert(`Orden creada: ${numeroOrden}`);
     document.getElementById("solicitudForm").reset();
     document.getElementById("solicitante").value = solicitante;
+    mostrarFrecuencia();
   } catch (error) {
     console.error(error);
     alert(`Error al guardar: ${error.message}`);
