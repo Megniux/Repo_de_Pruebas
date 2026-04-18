@@ -5,8 +5,7 @@ import { initEquiposView } from "./views/equipos.js";
 import { initUbicacionesView } from "./views/ubicaciones.js";
 import { initUsuariosView } from "./views/usuarios.js";
 import { initInformesView } from "./views/informes.js";
-import { collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-import { db } from "./firebase-config.js";
+import { collection, getDocs, query, orderBy, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";import { db } from "./firebase-config.js";
 
 const routes = {
   login: { template: "templates/login.html", title: "Iniciar Sesión", init: null, roles: ["guest", "usuario", "tecnico", "supervisor", "admin", "superadmin"] },
@@ -271,6 +270,7 @@ export async function cargarContenido(routeKey, push = true) {
     return;
   }
 
+  await renderTelefonos(activeClienteId);
   await route.init?.({ role: authState.profile.rol, userName: authState.profile.nombre, clienteId: activeClienteId });
 }
 
@@ -306,4 +306,25 @@ export function initRouter() {
     const route = currentRoute();
     await cargarContenido(route, false);
   });
+}
+
+async function renderTelefonos(clienteId) {
+  const container = document.querySelector(".sidebar-contacts");
+  if (!container) return;
+
+  if (!clienteId) {
+    container.innerHTML = "";
+    return;
+  }
+
+  const snap = await getDoc(doc(db, "clientes", clienteId));
+  const telefonos = snap.exists() ? (snap.data().telefonos || []) : [];
+
+  if (!telefonos.length) {
+    container.innerHTML = "";
+    return;
+  }
+
+  container.innerHTML = `<h3>Telefonos de contacto</h3>
+    ${telefonos.map((t) => `<a class="sidebar-contact-link" href="tel:${t.numero}">${t.label}</a>`).join("")}`;
 }
