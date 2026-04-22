@@ -209,7 +209,7 @@ export async function cargarContenido(routeKey, push = true) {
       forgotPasswordLink?.classList.add("is-hidden");
       resetActions?.classList.remove("is-hidden");
       if (loginMessage) {
-        loginMessage.textContent = "Ingresa tu correo y luego haz clic en reestablecer contraseña.";
+        loginMessage.textContent = "Ingresa el correo con el que estás registrado en la aplicación y luego haz clic en reestablecer contraseña.";
       }
     };
 
@@ -245,7 +245,7 @@ export async function cargarContenido(routeKey, push = true) {
       const email = document.getElementById("loginEmail")?.value.trim();
       if (!email) {
         if (loginMessage) {
-          loginMessage.textContent = "Ingresa tu correo y luego haz clic en reestablecer contraseña.";
+          loginMessage.textContent = "Ingresa el correo con el que estás registrado en la aplicación y luego haz clic en reestablecer contraseña.";
         }
         return;
       }
@@ -254,7 +254,7 @@ export async function cargarContenido(routeKey, push = true) {
         disableResetMode();
         forgotPasswordLink?.classList.add("is-hidden");
         if (loginMessage) {
-          loginMessage.textContent = "Te enviamos un correo para reestablecer tu contraseña. Revisa tu bandeja de entrada y carpeta de spam.";
+          loginMessage.textContent = "Si el correo está registrado, recibirás un enlace para restablecer tu contraseña. Revisa tu bandeja de entrada y carpeta de correo no deseado o spam.";
         }
       } catch (err) {
         if (loginMessage) {
@@ -290,6 +290,15 @@ export function initRouter() {
         appLayout.classList.remove("sidebar-expanded");
         sidebarToggle.setAttribute("aria-expanded", "false");
       }
+    });
+    // Cerrar sidebar al hacer click fuera en mobile
+    document.addEventListener("click", (e) => {
+      if (window.innerWidth >= MOBILE_BREAKPOINT) return;
+      if (!appLayout.classList.contains("sidebar-expanded")) return;
+      const sidebar = document.getElementById("sidebar");
+      if (sidebar.contains(e.target)) return;
+      if (sidebarToggle.contains(e.target)) return;
+      collapseSidebarOnMobile();
     });
   }
 
